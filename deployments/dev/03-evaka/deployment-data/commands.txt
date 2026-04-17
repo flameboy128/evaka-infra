@@ -1,0 +1,41 @@
+# DUMMY DATA
+
+# evaka-srv/dev-data/mock-vtj-dataset.json
+# This is a JSON serialization of the legacyMockVtjDataset() function in the evaka repo:
+# evaka/service/src/main/kotlin/fi/espoo/evaka/vtjclient/service/persondetails/LegacyVtjMocks.kt
+# It contains fictional test personas (name/address/SSN combinations) used across all eVaka local development environments.
+# The same data is already public in espoon-voltti/evaka.
+
+# evaka-srv/dev-data/dev-data.sql
+# evaka-srv/dev-data/service-need-options.sql
+# evaka-srv/dev-data/employees.sql
+# evaka-srv/dev-data/preschool-terms.sql
+# evaka-srv/dev-data/club-terms.sql
+# These are copied from evaka repo's evaka/service/src/main/resources/dev-data/
+# They contain test data (care areas, daycares, fee thresholds, employees, service need options, terms)
+# loaded into the database by the dev-data-loader init container on first startup.
+
+# evaka-srv/dummy_jwks.json
+# This is copied and renamed from evaka repo's evaka/service/src/main/resources/local-development/jwks.json
+
+# evaka-srv/dummy_truststore.jks
+# This is copied and renamed from evaka repo's evaka/service/src/test/resources/xroad/trustStore.jks
+
+# api-gw/dummy_ad_saml_sp_sign_private_key.pem
+# Dummy Service Provider (SP) key
+docker run --rm -v ./api-gw:/work alpine/openssl:3.3.3 genrsa -out /work/dummy_ad_saml_sp_sign_private_key.pem 2048
+
+# api-gw/dummy_ad_saml_idp_sign_public_cert.pem
+# Dummy Identity Provider's (IDP) certificate
+docker run --rm -v ./api-gw:/work alpine/openssl:3.3.3 req -newkey rsa:2048 -nodes -keyout /work/dummy_ad_saml_idp_private_sign_cert.key -x509 -days 1095 -out /work/dummy_ad_saml_idp_sign_public_cert.pem -subj "/CN=some-dummy-idp"
+# We don't need the key
+rm api-gw/dummy_ad_saml_idp_private_sign_cert.key
+
+# api-gw/dummy_sfi_saml_idp_sign_public_cert.pem
+# This is copied and renamed from evaka repo's evaka/apigw/config/test-cert/dummy-idp.pem
+
+# api-gw/dummy_sfi_saml_sp_sign_private_key.pem
+# This is copied and renamed from evaka repo's evaka/apigw/config/test-cert/saml-private.pem
+
+# api-gw/dummy_jwt_private_key.pem
+# This is copied and renamed from evaka repo's evaka/apigw/config/test-cert/jwt_private_key.pem
