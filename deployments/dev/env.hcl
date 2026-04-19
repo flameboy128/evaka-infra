@@ -4,7 +4,7 @@
 
 locals {
   env             = "dev"
-  aws_account_id  = "123456789012"  # TODO: Replace with your AWS account ID
+  aws_account_id  = "926058918693"  # TODO: Replace with your AWS account ID
   aws_region      = "eu-north-1"    # TODO: Change if using different region
 
   evaka_app_repository_name   = "PetteriSalenius/evaka"        # TODO: Replace with your eVaka application GitHub repository
