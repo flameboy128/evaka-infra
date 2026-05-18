@@ -1,0 +1,50 @@
+name: Terragrunt Apply (dev)
+
+# Required GitHub Environment Secrets (Settings → Environments → dev):
+# - GH_ACTIONS_ROLE_ARN: IAM role ARN for OIDC authentication
+#   Example: arn:aws:iam::123456789012:role/github-actions-role
+# - AWS_REGION: AWS region where ECR repositories exist
+#   Example: eu-north-1
+
+on:
+  push:
+    paths:
+      - "stacks/**"
+      - "deployments/**"
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  terragrunt_apply:
+    environment: dev
+    name: Terragrunt Apply
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terragrunt validate
+        id: validate
+        uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_dir: deployments/dev
+          tg_command: "run --all validate -no-color"
+        continue-on-error: true
+
+      - name: Terragrunt apply
+        id: apply
+        uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_dir: deployments/dev
+          tg_command: "run --all apply -no-color"

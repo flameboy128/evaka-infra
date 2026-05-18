@@ -1,0 +1,114 @@
+name: Terragrunt Plan (dev)
+
+# Required GitHub Environment Secrets (Settings → Environments → dev):
+# - GH_ACTIONS_ROLE_ARN: IAM role ARN for OIDC authentication
+#   Example: arn:aws:iam::123456789012:role/github-actions-role
+# - AWS_REGION: AWS region where ECR repositories exist
+#   Example: eu-north-1
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  terragrunt_plan_output:
+    environment: dev
+    name: Terragrunt Plan
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terragrunt format
+        id: fmt
+        uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_dir: deployments/dev
+          tg_command: "run --all fmt -no-color"
+        continue-on-error: true
+
+      - name: Terragrunt validate
+        id: validate
+        uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_dir: deployments/dev
+          tg_command: "run --all validate -no-color"
+        continue-on-error: true
+
+      - name: Terragrunt plan
+        id: plan
+        uses: gruntwork-io/terragrunt-action@v3
+        env:
+          INPUT_POST_EXEC_1: |
+            echo "NOW=$(date +'%y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
+        with:
+          tg_dir: deployments/dev
+          tg_command: "run --all plan -no-color"
+        continue-on-error: true
+
+      - name: Parse plan output
+        id: parse_plan
+        if: github.event_name == 'pull_request' && steps.plan.outcome == 'success'
+        run: |
+          PLAN_OUTPUT=$(echo '${{ steps.plan.outputs.tg_action_output }}' | sed 's|%0A|\n|g ; s|%3C|<|g')
+
+          if echo "$PLAN_OUTPUT" | grep -q "Terraform will perform the following actions"; then
+            echo "PLAN_SUMMARY=Changes detected in the infrastructure. See details below." >> $GITHUB_ENV
+          else
+            echo "PLAN_SUMMARY=No changes. Your infrastructure matches the configuration." >> $GITHUB_ENV
+          fi
+
+          {
+            echo "PARSED_PLAN<<EOF"
+            echo "${PLAN_OUTPUT:0:653000}"
+            echo "EOF"
+          } >> $GITHUB_ENV
+
+      - name: Find PR comment
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/find-comment@v4
+        id: find_comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: Terragrunt Output
+
+      - name: Create or update PR comment
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          comment-id: ${{ steps.find_comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Terragrunt Output
+            #### Terragrunt Fmt: ${{ steps.fmt.outcome == 'success' && '✅' || '❌' }}
+            #### Terragrunt Validate: ${{ steps.validate.outcome == 'success' && '✅' || '❌' }}
+            #### Terragrunt Plan: ${{ steps.plan.outcome == 'success' && '✅' || '❌' }}
+
+            <details><summary>Show Plan Details</summary>
+
+            ```
+            ${{ steps.plan.outcome == 'success' && env.PARSED_PLAN || 'Nothing to see here. Workflow failed.' }}
+            ```
+
+            </details>
+
+            *Pushed by: @${{ github.actor }}, Action: `${{ github.event_name }}`*
+            *Updated at: ${{ env.NOW }}*
+          edit-mode: replace
+
+      - name: Check terragrunt plan status
+        if: github.event_name == 'pull_request' && steps.plan.outcome == 'failure'
+        run: exit 1
