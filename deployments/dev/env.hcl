@@ -7,8 +7,8 @@ locals {
   aws_account_id  = "926058918693"  # TODO: Replace with your AWS account ID
   aws_region      = "eu-north-1"    # TODO: Change if using different region
 
-  evaka_app_repository_name   = "PetteriSalenius/evaka"        # TODO: Replace with your eVaka application GitHub repository
-  evaka_infra_repository_name = "PetteriSalenius/evaka-infra"  # TODO: Replace with your eVaka infrastructure GitHub repository
+  evaka_app_repository_name   = "flameboy128/evaka"        # TODO: Replace with your eVaka application GitHub repository
+  evaka_infra_repository_name = "flameboy128/evaka-infra"  # TODO: Replace with your eVaka infrastructure GitHub repository
 
   evaka_fqdn  = "evaka-dev.petajavesi.fi"  # Fully qualified domain name for eVaka (a Route53 Hosted Zone will be created for it)
   
@@ -18,7 +18,7 @@ locals {
   # TODO: Restrict to your IP addresses for security
   # Note: DO NOT ALLOW ACCESS FROM EVERYWHERE!
   allow_access_from = {
-    # "195.156.48.130/32" : "Allow from a single IP address"
+    "84.231.96.172/32" : "Allow from a single IP address"
   }
 
   # For simple dev environment, values below don't need to be edited
